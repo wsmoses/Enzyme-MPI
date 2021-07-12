@@ -1,5 +1,11 @@
 #default build suggestion of MPI + OPENMP with gcc on Livermore machines you might have to change the compiler name
 
+ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13Fast/Enzyme/ClangEnzyme-13.so
+CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildallfast/bin/
+OPENMP_PATH ?= $(CLANG_PATH)/../projects/openmp/runtime/src
+MPI_PATH ?= /usr/lib/x86_64-linux-gnu/openmpi/include
+OPENMP_LIB ?= $(CLANG_PATH)/../libomp.so
+
 SHELL = /bin/sh
 .SUFFIXES: .cc .o
 
@@ -8,9 +14,7 @@ LULESH_EXEC = lulesh2.0
 MPI_INC = /opt/local/include/openmpi
 MPI_LIB = /opt/local/lib
 
-SERCXX = g++ -DUSE_MPI=0
-MPICXX = mpig++ -DUSE_MPI=1
-CXX = $(MPICXX)
+CXX = $(CLANG_PATH)/clang++ -DUSE_MPI=1
 
 SOURCES2.0 = \
 	lulesh.cc \
@@ -21,8 +25,9 @@ SOURCES2.0 = \
 OBJECTS2.0 = $(SOURCES2.0:.cc=.o)
 
 #Default build suggestions with OpenMP for g++
-CXXFLAGS = -g -O3 -fopenmp -I. -Wall
-LDFLAGS = -g -O3 -fopenmp
+CXXFLAGS = -flto=full -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -fno-vectorize -fno-unroll-loops
+# CXXFLAGS = -flto=full -g -O3 -fopenmp -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH)
+LDFLAGS = -O3 -fopenmp -lmpi -flto=full -fuse-ld=lld -Wl,--lto-legacy-pass-manager -Wl,-mllvm=-load=$(ENZYME_PATH) -Wl,-mllvm=-enzyme-print -Wl,-mllvm=-enzyme-loose-types
 
 #Below are reasonable default flags for a serial build
 #CXXFLAGS = -g -O3 -I. -Wall
@@ -50,7 +55,7 @@ all: $(LULESH_EXEC)
 
 $(LULESH_EXEC): $(OBJECTS2.0)
 	@echo "Linking"
-	$(CXX) $(OBJECTS2.0) $(LDFLAGS) -lm -o $@
+	$(CXX) $(OBJECTS2.0) $(LDFLAGS) -lm -o $@ 
 
 clean:
 	/bin/rm -f *.o *~ $(OBJECTS) $(LULESH_EXEC)

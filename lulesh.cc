@@ -2644,12 +2644,13 @@ void LagrangeLeapFrog(Domain& domain)
 #endif   
 }
 
-
+void __enzyme_autodiff(void*, void*, void*);
 /******************************************/
 
 int main(int argc, char *argv[])
 {
    Domain *locDom ;
+   Domain *grad_locDom ;
    int numRanks ;
    int myRank ;
    struct cmdLineOpts opts;
@@ -2715,6 +2716,8 @@ int main(int argc, char *argv[])
    locDom = new Domain(numRanks, col, row, plane, opts.nx,
                        side, opts.numReg, opts.balance, opts.cost) ;
 
+   grad_locDom = new Domain(numRanks, col, row, plane, opts.nx,
+                       side, opts.numReg, opts.balance, opts.cost) ;
 
 #if USE_MPI   
    fieldData = &Domain::nodalMass ;
@@ -2745,7 +2748,8 @@ int main(int argc, char *argv[])
    while((locDom->time() < locDom->stoptime()) && (locDom->cycle() < opts.its)) {
 
       TimeIncrement(*locDom) ;
-      LagrangeLeapFrog(*locDom) ;
+      //LagrangeLeapFrog(*locDom) ;
+      __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom);
 
       if ((opts.showProg != 0) && (opts.quiet == 0) && (myRank == 0)) {
          std::cout << "cycle = " << locDom->cycle()       << ", "
