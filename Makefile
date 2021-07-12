@@ -4,7 +4,7 @@ ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13Fast/Enzyme/ClangEnzyme-13.
 CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildallfast/bin/
 OPENMP_PATH ?= $(CLANG_PATH)/../projects/openmp/runtime/src
 MPI_PATH ?= /usr/lib/x86_64-linux-gnu/openmpi/include
-OPENMP_LIB ?= $(CLANG_PATH)/../libomp.so
+OPENMP_LIB ?= $(CLANG_PATH)/../lib/libomp.so
 
 SHELL = /bin/sh
 .SUFFIXES: .cc .o
@@ -27,7 +27,7 @@ OBJECTS2.0 = $(SOURCES2.0:.cc=.o)
 #Default build suggestions with OpenMP for g++
 CXXFLAGS = -flto=full -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -fno-vectorize -fno-unroll-loops
 # CXXFLAGS = -flto=full -g -O3 -fopenmp -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH)
-LDFLAGS = -O3 -fopenmp -lmpi -flto=full -fuse-ld=lld -Wl,--lto-legacy-pass-manager -Wl,-mllvm=-load=$(ENZYME_PATH) -Wl,-mllvm=-enzyme-print -Wl,-mllvm=-enzyme-loose-types
+LDFLAGS = -O3 -fopenmp -lmpi -flto=full -fuse-ld=lld -Wl,--lto-legacy-pass-manager -Wl,-mllvm=-load=$(ENZYME_PATH) -Wl,-mllvm=-enzyme-print -Wl,-mllvm=-enzyme-loose-types -Wl,-mllvm=-enzyme-print-perf
 
 #Below are reasonable default flags for a serial build
 #CXXFLAGS = -g -O3 -I. -Wall
@@ -55,7 +55,7 @@ all: $(LULESH_EXEC)
 
 $(LULESH_EXEC): $(OBJECTS2.0)
 	@echo "Linking"
-	$(CXX) $(OBJECTS2.0) $(LDFLAGS) -lm -o $@ 
+	$(CXX) $(OBJECTS2.0) $(LDFLAGS) -lm -o $@ $(OPENMP_LIB)
 
 clean:
 	/bin/rm -f *.o *~ $(OBJECTS) $(LULESH_EXEC)

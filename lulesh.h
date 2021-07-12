@@ -4,7 +4,7 @@
 
 #if USE_MPI
 #include <mpi.h>
-
+_Noreturn int MPI_Abort(MPI_Comm, int errorcode);
 /*
    define one of these three symbols:
 
