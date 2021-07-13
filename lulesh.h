@@ -1,3 +1,4 @@
+#pragma once
 #if !defined(USE_MPI)
 # error "You should specify USE_MPI=0 or USE_MPI=1 on the compile line"
 #endif
@@ -231,6 +232,7 @@ class Domain {
       m_delv_zeta = Allocate<Real_t>(allElem) ;
    }
 
+   __attribute__((always_inline))
    void DeallocateGradients()
    {
       Release(&m_delx_zeta);
@@ -249,6 +251,7 @@ class Domain {
       m_dzz = Allocate<Real_t>(numElem) ;
    }
 
+   __attribute__((always_inline))
    void DeallocateStrains()
    {
       Release(&m_dzz) ;
@@ -632,10 +635,6 @@ void DumpToVisit(Domain& domain, int numFiles, int myRank, int numRanks);
 void CommRecv(Domain& domain, Int_t msgType, Index_t xferFields,
               Index_t dx, Index_t dy, Index_t dz,
               bool doRecv, bool planeOnly);
-void CommSend(Domain& domain, Int_t msgType,
-              Index_t xferFields, Domain_member *fieldData,
-              Index_t dx, Index_t dy, Index_t dz,
-              bool doSend, bool planeOnly);
 void CommSBN(Domain& domain, Int_t xferFields, Domain_member *fieldData);
 void CommSyncPosVel(Domain& domain);
 void CommMonoQ(Domain& domain);

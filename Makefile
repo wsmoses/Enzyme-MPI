@@ -18,16 +18,16 @@ CXX = $(CLANG_PATH)/clang++ -DUSE_MPI=1
 
 SOURCES2.0 = \
 	lulesh.cc \
-	lulesh-comm.cc \
 	lulesh-viz.cc \
 	lulesh-util.cc \
 	lulesh-init.cc
 OBJECTS2.0 = $(SOURCES2.0:.cc=.o)
 
 #Default build suggestions with OpenMP for g++
-CXXFLAGS = -flto=full -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -fno-vectorize -fno-unroll-loops
+CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -fno-vectorize -fno-unroll-loops -mllvm -enzyme-print -Rpass=enzyme -fno-experimental-new-pass-manager -mllvm -enzyme-print-perf -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH)
 # CXXFLAGS = -flto=full -g -O3 -fopenmp -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH)
-LDFLAGS = -O3 -fopenmp -lmpi -flto=full -fuse-ld=lld -Wl,--lto-legacy-pass-manager -Wl,-mllvm=-load=$(ENZYME_PATH) -Wl,-mllvm=-enzyme-print -Wl,-mllvm=-enzyme-loose-types -Wl,-mllvm=-enzyme-print-perf
+LDFLAGS = -O3 -fopenmp -lmpi
+# LDFLAGS = -O3 -fopenmp -lmpi -flto=full -fuse-ld=lld -Wl,--lto-legacy-pass-manager -Wl,-mllvm=-load=$(ENZYME_PATH) -Wl,-mllvm=-enzyme-print -Wl,-mllvm=-enzyme-loose-types -Wl,-mllvm=-enzyme-print-perf
 
 #Below are reasonable default flags for a serial build
 #CXXFLAGS = -g -O3 -I. -Wall

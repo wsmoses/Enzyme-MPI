@@ -160,7 +160,7 @@ Additional BSD Notice
 #endif
 
 #include "lulesh.h"
-
+#include "lulesh-comm.cc"
 /* Work Routines */
 
 static inline
@@ -1122,15 +1122,10 @@ static inline void CalcForceForNodes(Domain& domain)
   CalcVolumeForceForElems(domain) ;
 
 #if USE_MPI  
-  Domain_member fieldData[3] ;
-  fieldData[0] = &Domain::fx ;
-  fieldData[1] = &Domain::fy ;
-  fieldData[2] = &Domain::fz ;
-  
-  CommSend(domain, MSG_COMM_SBN, 3, fieldData,
+  CommSend<&Domain::fx, &Domain::fy, &Domain::fz>(domain, MSG_COMM_SBN,
            domain.sizeX() + 1, domain.sizeY() + 1, domain.sizeZ() +  1,
            true, false) ;
-  CommSBN(domain, 3, fieldData) ;
+  CommSBN<&Domain::fx, &Domain::fy, &Domain::fz>(domain) ;
 #endif  
 }
 
@@ -1251,14 +1246,8 @@ void LagrangeNodal(Domain& domain)
    CalcPositionForNodes( domain, delt, domain.numNode() );
 #if USE_MPI
 #ifdef SEDOV_SYNC_POS_VEL_EARLY
-  fieldData[0] = &Domain::x ;
-  fieldData[1] = &Domain::y ;
-  fieldData[2] = &Domain::z ;
-  fieldData[3] = &Domain::xd ;
-  fieldData[4] = &Domain::yd ;
-  fieldData[5] = &Domain::zd ;
 
-   CommSend(domain, MSG_SYNC_POS_VEL, 6, fieldData,
+   CommSend<&Domain::x, &Domain::y, &Domain::z, &Domain::xd, &Domain::yd, &Domain::yd>(domain, MSG_SYNC_POS_VEL,
             domain.sizeX() + 1, domain.sizeY() + 1, domain.sizeZ() + 1,
             false, false) ;
    CommSyncPosVel(domain) ;
@@ -1978,7 +1967,7 @@ void CalcQForElems(Domain& domain)
       fieldData[1] = &Domain::delv_eta ;
       fieldData[2] = &Domain::delv_zeta ;
 
-      CommSend(domain, MSG_MONOQ, 3, fieldData,
+      CommSend<&Domain::delv_xi, &Domain::delv_eta, &Domain::delv_zeta>(domain, MSG_MONOQ,
                domain.sizeX(), domain.sizeY(), domain.sizeZ(),
                true, true) ;
 
@@ -2726,10 +2715,10 @@ int main(int argc, char *argv[])
    CommRecv(*locDom, MSG_COMM_SBN, 1,
             locDom->sizeX() + 1, locDom->sizeY() + 1, locDom->sizeZ() + 1,
             true, false) ;
-   CommSend(*locDom, MSG_COMM_SBN, 1, &fieldData,
+   CommSend<&Domain::nodalMass>(*locDom, MSG_COMM_SBN,
             locDom->sizeX() + 1, locDom->sizeY() + 1, locDom->sizeZ() +  1,
             true, false) ;
-   CommSBN(*locDom, 1, &fieldData) ;
+   CommSBN<&Domain::nodalMass>(*locDom) ;
 
    // End initialization
    MPI_Barrier(MPI_COMM_WORLD);
