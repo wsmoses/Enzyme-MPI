@@ -1,7 +1,7 @@
 #default build suggestion of MPI + OPENMP with gcc on Livermore machines you might have to change the compiler name
 
-ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13Fast/Enzyme/ClangEnzyme-13.so
-CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildallfast/bin/
+ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13D/Enzyme/ClangEnzyme-13.so
+CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildall/bin/
 OPENMP_PATH ?= $(CLANG_PATH)/../projects/openmp/runtime/src
 MPI_PATH ?= /usr/lib/x86_64-linux-gnu/openmpi/include
 OPENMP_LIB ?= $(CLANG_PATH)/../lib/libomp.so
@@ -24,7 +24,8 @@ SOURCES2.0 = \
 OBJECTS2.0 = $(SOURCES2.0:.cc=.o)
 
 #Default build suggestions with OpenMP for g++
-CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -fno-vectorize -fno-unroll-loops -mllvm -enzyme-print -Rpass=enzyme -fno-experimental-new-pass-manager -mllvm -enzyme-print-perf -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH)
+CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -fno-vectorize -fno-unroll-loops -mllvm -enzyme-print -Rpass=enzyme -fno-experimental-new-pass-manager -mllvm -enzyme-print-perf -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH) -fopenmp
+# CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -fno-vectorize -fno-unroll-loops -fno-experimental-new-pass-manager -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH) -fopenmp
 # CXXFLAGS = -flto=full -g -O3 -fopenmp -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH)
 LDFLAGS = -O3 -fopenmp -lmpi
 # LDFLAGS = -O3 -fopenmp -lmpi -flto=full -fuse-ld=lld -Wl,--lto-legacy-pass-manager -Wl,-mllvm=-load=$(ENZYME_PATH) -Wl,-mllvm=-enzyme-print -Wl,-mllvm=-enzyme-loose-types -Wl,-mllvm=-enzyme-print-perf
