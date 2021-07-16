@@ -287,93 +287,12 @@ void InitStressTermsForElems(Domain &domain,
 
 /******************************************/
 
+__attribute__((noinline))
 static inline
 void CalcElemShapeFunctionDerivatives( Real_t const x[],
-                                       Real_t const y[],
-                                       Real_t const z[],
-                                       Real_t b[][8],
                                        Real_t* const volume )
-{
-  const Real_t x0 = x[0] ;   const Real_t x1 = x[1] ;
-  const Real_t x2 = x[2] ;   const Real_t x3 = x[3] ;
-  const Real_t x4 = x[4] ;   const Real_t x5 = x[5] ;
-  const Real_t x6 = x[6] ;   const Real_t x7 = x[7] ;
-
-  const Real_t y0 = y[0] ;   const Real_t y1 = y[1] ;
-  const Real_t y2 = y[2] ;   const Real_t y3 = y[3] ;
-  const Real_t y4 = y[4] ;   const Real_t y5 = y[5] ;
-  const Real_t y6 = y[6] ;   const Real_t y7 = y[7] ;
-
-  const Real_t z0 = z[0] ;   const Real_t z1 = z[1] ;
-  const Real_t z2 = z[2] ;   const Real_t z3 = z[3] ;
-  const Real_t z4 = z[4] ;   const Real_t z5 = z[5] ;
-  const Real_t z6 = z[6] ;   const Real_t z7 = z[7] ;
-
-  Real_t fjxxi, fjxet, fjxze;
-  Real_t fjyxi, fjyet, fjyze;
-  Real_t fjzxi, fjzet, fjzze;
-  Real_t cjxxi, cjxet, cjxze;
-  Real_t cjyxi, cjyet, cjyze;
-  Real_t cjzxi, cjzet, cjzze;
-
-  fjxxi = Real_t(.125) * ( (x6-x0) + (x5-x3) - (x7-x1) - (x4-x2) );
-  fjxet = Real_t(.125) * ( (x6-x0) - (x5-x3) + (x7-x1) - (x4-x2) );
-  fjxze = Real_t(.125) * ( (x6-x0) + (x5-x3) + (x7-x1) + (x4-x2) );
-
-  fjyxi = Real_t(.125) * ( (y6-y0) + (y5-y3) - (y7-y1) - (y4-y2) );
-  fjyet = Real_t(.125) * ( (y6-y0) - (y5-y3) + (y7-y1) - (y4-y2) );
-  fjyze = Real_t(.125) * ( (y6-y0) + (y5-y3) + (y7-y1) + (y4-y2) );
-
-  fjzxi = Real_t(.125) * ( (z6-z0) + (z5-z3) - (z7-z1) - (z4-z2) );
-  fjzet = Real_t(.125) * ( (z6-z0) - (z5-z3) + (z7-z1) - (z4-z2) );
-  fjzze = Real_t(.125) * ( (z6-z0) + (z5-z3) + (z7-z1) + (z4-z2) );
-
-  /* compute cofactors */
-  cjxxi =    (fjyet * fjzze) - (fjzet * fjyze);
-  cjxet =  - (fjyxi * fjzze) + (fjzxi * fjyze);
-  cjxze =    (fjyxi * fjzet) - (fjzxi * fjyet);
-
-  cjyxi =  - (fjxet * fjzze) + (fjzet * fjxze);
-  cjyet =    (fjxxi * fjzze) - (fjzxi * fjxze);
-  cjyze =  - (fjxxi * fjzet) + (fjzxi * fjxet);
-
-  cjzxi =    (fjxet * fjyze) - (fjyet * fjxze);
-  cjzet =  - (fjxxi * fjyze) + (fjyxi * fjxze);
-  cjzze =    (fjxxi * fjyet) - (fjyxi * fjxet);
-
-  /* calculate partials :
-     this need only be done for l = 0,1,2,3   since , by symmetry ,
-     (6,7,4,5) = - (0,1,2,3) .
-  */
-  b[0][0] =   -  cjxxi  -  cjxet  -  cjxze;
-  b[0][1] =      cjxxi  -  cjxet  -  cjxze;
-  b[0][2] =      cjxxi  +  cjxet  -  cjxze;
-  b[0][3] =   -  cjxxi  +  cjxet  -  cjxze;
-  b[0][4] = -b[0][2];
-  b[0][5] = -b[0][3];
-  b[0][6] = -b[0][0];
-  b[0][7] = -b[0][1];
-
-  b[1][0] =   -  cjyxi  -  cjyet  -  cjyze;
-  b[1][1] =      cjyxi  -  cjyet  -  cjyze;
-  b[1][2] =      cjyxi  +  cjyet  -  cjyze;
-  b[1][3] =   -  cjyxi  +  cjyet  -  cjyze;
-  b[1][4] = -b[1][2];
-  b[1][5] = -b[1][3];
-  b[1][6] = -b[1][0];
-  b[1][7] = -b[1][1];
-
-  b[2][0] =   -  cjzxi  -  cjzet  -  cjzze;
-  b[2][1] =      cjzxi  -  cjzet  -  cjzze;
-  b[2][2] =      cjzxi  +  cjzet  -  cjzze;
-  b[2][3] =   -  cjzxi  +  cjzet  -  cjzze;
-  b[2][4] = -b[2][2];
-  b[2][5] = -b[2][3];
-  b[2][6] = -b[2][0];
-  b[2][7] = -b[2][1];
-
-  /* calculate jacobian determinant (volume) */
-  *volume = Real_t(8.) * ( fjxet * cjxet + fjyet * cjyet + fjzet * cjzet);
+{ 
+  *volume = x[0];
 }
 
 /******************************************/
@@ -518,47 +437,13 @@ void IntegrateStressForElems( Domain &domain,
   }
   // loop over all elements
 
-#pragma omp parallel for firstprivate(numElem)
+#pragma omp parallel for
   for( Index_t k=0 ; k<numElem ; ++k )
   {
-    const Index_t* const elemToNode = domain.nodelist(k);
-    Real_t B[3][8] ;// shape function derivatives
     Real_t x_local[8] ;
-    Real_t y_local[8] ;
-    Real_t z_local[8] ;
-
-    // get nodal coordinates from global arrays and copy into local arrays.
-    CollectDomainNodesToElemNodes(domain, elemToNode, x_local, y_local, z_local);
-
-    // Volume calculation involves extra work for numerical consistency
-    CalcElemShapeFunctionDerivatives(x_local, y_local, z_local,
-                                         B, &determ[k]);
-
-    CalcElemNodeNormals( B[0] , B[1], B[2],
-                          x_local, y_local, z_local );
-
-    if (numthreads > 1) {
-       // Eliminate thread writing conflicts at the nodes by giving
-       // each element its own copy to write to
-       SumElemStressesToNodeForces( B, sigxx[k], sigyy[k], sigzz[k],
-                                    &fx_elem[k*8],
-                                    &fy_elem[k*8],
-                                    &fz_elem[k*8] ) ;
-    }
-    else {
-       SumElemStressesToNodeForces( B, sigxx[k], sigyy[k], sigzz[k],
-                                    fx_local, fy_local, fz_local ) ;
-
-       // copy nodal force contributions to global force arrray.
-       for( Index_t lnode=0 ; lnode<8 ; ++lnode ) {
-          Index_t gnode = elemToNode[lnode];
-          domain.fx(gnode) += fx_local[lnode];
-          domain.fy(gnode) += fy_local[lnode];
-          domain.fz(gnode) += fz_local[lnode];
-       }
-    }
+    CalcElemShapeFunctionDerivatives(x_local, &determ[k]);
   }
-
+#if 0
   if (numthreads > 1) {
      // If threaded, then we need to copy the data out of the temporary
      // arrays used above into the final forces field
@@ -584,6 +469,7 @@ void IntegrateStressForElems( Domain &domain,
      Release(&fy_elem) ;
      Release(&fx_elem) ;
   }
+#endif
 }
 
 /******************************************/
@@ -1070,14 +956,25 @@ void CalcVolumeForceForElems(Domain& domain)
       Real_t *determ = Allocate<Real_t>(numElem) ;
 
       /* Sum contributions to total stress tensor */
-      InitStressTermsForElems(domain, sigxx, sigyy, sigzz, numElem);
+      //InitStressTermsForElems(domain, sigxx, sigyy, sigzz, numElem);
 
       // call elemlib stress integration loop to produce nodal forces from
       // material stresses.
+#pragma omp parallel for
+  for( Index_t k=0 ; k<numElem ; ++k )
+  {
+    Real_t x_local[8] ;
+    CalcElemShapeFunctionDerivatives(x_local, &determ[k]);
+  }
+  /*
+      
       IntegrateStressForElems( domain,
                                sigxx, sigyy, sigzz, determ, numElem,
                                domain.numNode()) ;
+                               */
+      
 
+      /*
       // check for negative element volume
 #pragma omp parallel for firstprivate(numElem)
       for ( Index_t k=0 ; k<numElem ; ++k ) {
@@ -1096,6 +993,7 @@ void CalcVolumeForceForElems(Domain& domain)
       Release(&sigzz) ;
       Release(&sigyy) ;
       Release(&sigxx) ;
+      */
    }
 }
 
@@ -1111,15 +1009,26 @@ static inline void CalcForceForNodes(Domain& domain)
            true, false) ;
 #endif  
 
+  /*
 #pragma omp parallel for firstprivate(numNode)
   for (Index_t i=0; i<numNode; ++i) {
      domain.fx(i) = Real_t(0.0) ;
      domain.fy(i) = Real_t(0.0) ;
      domain.fz(i) = Real_t(0.0) ;
   }
+  */
 
   /* Calcforce calls partial, force, hourq */
-  CalcVolumeForceForElems(domain) ;
+  //CalcVolumeForceForElems(domain) ;
+   
+  Index_t numElem = domain.numElem() ;
+      Real_t *determ = Allocate<Real_t>(numElem) ;
+#pragma omp parallel for
+  for( Index_t k=0 ; k<numElem ; ++k )
+  {
+    Real_t x_local[8] ;
+    CalcElemShapeFunctionDerivatives(x_local, &determ[k]);
+  }
 
 #if USE_MPI  
   CommSend<&Domain::fx, &Domain::fy, &Domain::fz>(domain, MSG_COMM_SBN,
@@ -1226,7 +1135,15 @@ void LagrangeNodal(Domain& domain)
 
   /* time of boundary condition evaluation is beginning of step for force and
    * acceleration boundary conditions. */
-  CalcForceForNodes(domain);
+  //CalcForceForNodes(domain);
+  Index_t numElem = 10;//domain.numElem() ;
+      Real_t *determ = Allocate<Real_t>(numElem) ;
+#pragma omp parallel for
+  for( Index_t k=0 ; k<numElem ; ++k )
+  {
+    Real_t x_local[8] ;
+    CalcElemShapeFunctionDerivatives(x_local, &determ[k]);
+  }
 
 #if USE_MPI  
 #ifdef SEDOV_SYNC_POS_VEL_EARLY
@@ -1235,7 +1152,7 @@ void LagrangeNodal(Domain& domain)
             false, false) ;
 #endif
 #endif
-   
+   /*
    CalcAccelerationForNodes(domain, domain.numNode());
    
    ApplyAccelerationBoundaryConditionsForNodes(domain);
@@ -1243,6 +1160,7 @@ void LagrangeNodal(Domain& domain)
    CalcVelocityForNodes( domain, delt, u_cut, domain.numNode()) ;
 
    CalcPositionForNodes( domain, delt, domain.numNode() );
+   */
 #if USE_MPI
 #ifdef SEDOV_SYNC_POS_VEL_EARLY
 
@@ -1542,8 +1460,6 @@ void CalcKinematicsForElems( Domain &domain,
        z_local[j] -= dt2 * zd_local[j];
     }
 
-    CalcElemShapeFunctionDerivatives( x_local, y_local, z_local,
-                                      B, &detJ );
 
     CalcElemVelocityGradient( xd_local, yd_local, zd_local,
                                B, detJ, D );
@@ -2504,28 +2420,28 @@ static inline
 void CalcHydroConstraintForElems(Domain &domain, Index_t length,
                                  Index_t *regElemlist, Real_t dvovmax, Real_t& dthydro)
 {
-#if _OPENMP
-   const Index_t threads = omp_get_max_threads();
-   Index_t hydro_elem_per_thread[threads];
-   Real_t dthydro_per_thread[threads];
-#else
+//#if _OPENMP
+//   const Index_t threads = omp_get_max_threads();
+//   Index_t hydro_elem_per_thread[threads];
+//   Real_t dthydro_per_thread[threads];
+//#else
    Index_t threads = 1;
    Index_t hydro_elem_per_thread[1];
    Real_t  dthydro_per_thread[1];
-#endif
+//#endif
 
-#pragma omp parallel firstprivate(length, dvovmax)
+//#pragma omp parallel firstprivate(length, dvovmax)
    {
       Real_t dthydro_tmp = dthydro ;
       Index_t hydro_elem = -1 ;
 
-#if _OPENMP
-      Index_t thread_num = omp_get_thread_num();
-#else      
+//#if _OPENMP
+//      Index_t thread_num = omp_get_thread_num();
+//#else      
       Index_t thread_num = 0;
-#endif      
+//#endif      
 
-#pragma omp for
+//#pragma omp for
       for (Index_t i = 0 ; i < length ; ++i) {
          Index_t indx = regElemlist[i] ;
 
@@ -2600,7 +2516,7 @@ void LagrangeLeapFrog(Domain& domain)
 
    /* calculate element quantities (i.e. velocity gradient & q), and update
     * material states */
-   LagrangeElements(domain, domain.numElem());
+   //LagrangeElements(domain, domain.numElem());
 
 #if USE_MPI   
 #ifdef SEDOV_SYNC_POS_VEL_LATE
@@ -2621,7 +2537,7 @@ void LagrangeLeapFrog(Domain& domain)
 #endif
 #endif   
 
-   CalcTimeConstraintsForElems(domain);
+   //CalcTimeConstraintsForElems(domain);
 
 #if USE_MPI   
 #ifdef SEDOV_SYNC_POS_VEL_LATE

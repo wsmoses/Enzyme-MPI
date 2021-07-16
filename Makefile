@@ -1,7 +1,7 @@
 #default build suggestion of MPI + OPENMP with gcc on Livermore machines you might have to change the compiler name
 
-ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13D/Enzyme/ClangEnzyme-13.so
-CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildall/bin/
+ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13Fast/Enzyme/ClangEnzyme-13.so
+CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildallfast/bin/
 OPENMP_PATH ?= $(CLANG_PATH)/../projects/openmp/runtime/src
 MPI_PATH ?= /usr/lib/x86_64-linux-gnu/openmpi/include
 OPENMP_LIB ?= $(CLANG_PATH)/../lib/libomp.so
@@ -14,7 +14,8 @@ LULESH_EXEC = lulesh2.0
 MPI_INC = /opt/local/include/openmpi
 MPI_LIB = /opt/local/lib
 
-CXX = $(CLANG_PATH)/clang++ -DUSE_MPI=1
+# CXX = $(CLANG_PATH)/clang++ -DUSE_MPI=1
+CXX = $(CLANG_PATH)/clang++ -DUSE_MPI=0
 
 SOURCES2.0 = \
 	lulesh.cc \
