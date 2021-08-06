@@ -2734,8 +2734,8 @@ int main(int argc, char *argv[])
    while((locDom->time() < locDom->stoptime()) && (locDom->cycle() < opts.its)) {
 
       TimeIncrement(*locDom) ;
-      //LagrangeLeapFrog(*locDom) ;
-      __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom);
+      LagrangeLeapFrog(*locDom) ;
+      //__enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom);
 
       if ((opts.showProg != 0) && (opts.quiet == 0) && (myRank == 0)) {
          std::cout << "cycle = " << locDom->cycle()       << ", "
