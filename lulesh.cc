@@ -1151,22 +1151,36 @@ void ApplyAccelerationBoundaryConditionsForNodes(Domain& domain)
    Index_t size = domain.sizeX();
    Index_t numNodeBC = (size+1)*(size+1) ;
 
+#if OMP_MERGE
 #pragma omp parallel
+#endif
    {
       if (!domain.symmXempty() != 0) {
+#if OMP_MERGE
 #pragma omp for nowait firstprivate(numNodeBC)
+#else
+#pragma omp parallel for firstprivate(numNodeBC)
+#endif
          for(Index_t i=0 ; i<numNodeBC ; ++i)
             domain.xdd(domain.symmX(i)) = Real_t(0.0) ;
       }
 
       if (!domain.symmYempty() != 0) {
+#if OMP_MERGE
 #pragma omp for nowait firstprivate(numNodeBC)
+#else
+#pragma omp parallel for firstprivate(numNodeBC)
+#endif
          for(Index_t i=0 ; i<numNodeBC ; ++i)
             domain.ydd(domain.symmY(i)) = Real_t(0.0) ;
       }
 
       if (!domain.symmZempty() != 0) {
+#if OMP_MERGE
 #pragma omp for nowait firstprivate(numNodeBC)
+#else
+#pragma omp parallel for firstprivate(numNodeBC)
+#endif
          for(Index_t i=0 ; i<numNodeBC ; ++i)
             domain.zdd(domain.symmZ(i)) = Real_t(0.0) ;
       }
@@ -2008,6 +2022,28 @@ void CalcPressureForElems(Real_t* p_new, Real_t* bvc,
                           Real_t p_cut, Real_t eosvmax,
                           Index_t length, Index_t *regElemList)
 {
+#pragma omp parallel for firstprivate(length)
+   for (Index_t i = 0; i < length ; ++i) {
+      Real_t c1s = Real_t(2.0)/Real_t(3.0) ;
+      bvc[i] = c1s * (compression[i] + Real_t(1.));
+      pbvc[i] = c1s;
+   }
+
+#pragma omp parallel for firstprivate(length, pmin, p_cut, eosvmax)
+   for (Index_t i = 0 ; i < length ; ++i){
+      Index_t ielem = regElemList[i];
+      
+      p_new[i] = bvc[i] * e_old[i] ;
+
+      if    (FABS(p_new[i]) <  p_cut   )
+         p_new[i] = Real_t(0.0) ;
+
+      if    ( vnewc[ielem] >= eosvmax ) /* impossible condition here? */
+         p_new[i] = Real_t(0.0) ;
+
+      if    (p_new[i]       <  pmin)
+         p_new[i]   = pmin ;
+   }
 }
 
 /******************************************/
@@ -2024,6 +2060,120 @@ void CalcEnergyForElems(Real_t* p_new, Real_t* e_new, Real_t* q_new,
                         Real_t eosvmax,
                         Index_t length, Index_t *regElemList)
 {
+   Real_t *pHalfStep = Allocate<Real_t>(length) ;
+
+#pragma omp parallel for firstprivate(length, emin)
+   for (Index_t i = 0 ; i < length ; ++i) {
+      e_new[i] = e_old[i] - Real_t(0.5) * delvc[i] * (p_old[i] + q_old[i])
+         + Real_t(0.5) * work[i];
+
+      if (e_new[i]  < emin ) {
+         e_new[i] = emin ;
+      }
+   }
+
+   CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep, vnewc,
+                        pmin, p_cut, eosvmax, length, regElemList);
+
+#pragma omp parallel for firstprivate(length, rho0)
+   for (Index_t i = 0 ; i < length ; ++i) {
+      Real_t vhalf = Real_t(1.) / (Real_t(1.) + compHalfStep[i]) ;
+
+      if ( delvc[i] > Real_t(0.) ) {
+         q_new[i] /* = qq_old[i] = ql_old[i] */ = Real_t(0.) ;
+      }
+      else {
+         Real_t ssc = ( pbvc[i] * e_new[i]
+                 + vhalf * vhalf * bvc[i] * pHalfStep[i] ) / rho0 ;
+
+         if ( ssc <= Real_t(.1111111e-36) ) {
+            ssc = Real_t(.3333333e-18) ;
+         } else {
+            ssc = SQRT(ssc) ;
+         }
+
+         q_new[i] = (ssc*ql_old[i] + qq_old[i]) ;
+      }
+
+      e_new[i] = e_new[i] + Real_t(0.5) * delvc[i]
+         * (  Real_t(3.0)*(p_old[i]     + q_old[i])
+              - Real_t(4.0)*(pHalfStep[i] + q_new[i])) ;
+   }
+
+#pragma omp parallel for firstprivate(length, emin, e_cut)
+   for (Index_t i = 0 ; i < length ; ++i) {
+
+      e_new[i] += Real_t(0.5) * work[i];
+
+      if (FABS(e_new[i]) < e_cut) {
+         e_new[i] = Real_t(0.)  ;
+      }
+      if (     e_new[i]  < emin ) {
+         e_new[i] = emin ;
+      }
+   }
+
+   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc,
+                        pmin, p_cut, eosvmax, length, regElemList);
+
+#pragma omp parallel for firstprivate(length, rho0, emin, e_cut)
+   for (Index_t i = 0 ; i < length ; ++i){
+      const Real_t sixth = Real_t(1.0) / Real_t(6.0) ;
+      Index_t ielem = regElemList[i];
+      Real_t q_tilde ;
+
+      if (delvc[i] > Real_t(0.)) {
+         q_tilde = Real_t(0.) ;
+      }
+      else {
+         Real_t ssc = ( pbvc[i] * e_new[i]
+                 + vnewc[ielem] * vnewc[ielem] * bvc[i] * p_new[i] ) / rho0 ;
+
+         if ( ssc <= Real_t(.1111111e-36) ) {
+            ssc = Real_t(.3333333e-18) ;
+         } else {
+            ssc = SQRT(ssc) ;
+         }
+
+         q_tilde = (ssc*ql_old[i] + qq_old[i]) ;
+      }
+
+      e_new[i] = e_new[i] - (  Real_t(7.0)*(p_old[i]     + q_old[i])
+                               - Real_t(8.0)*(pHalfStep[i] + q_new[i])
+                               + (p_new[i] + q_tilde)) * delvc[i]*sixth ;
+
+      if (FABS(e_new[i]) < e_cut) {
+         e_new[i] = Real_t(0.)  ;
+      }
+      if (     e_new[i]  < emin ) {
+         e_new[i] = emin ;
+      }
+   }
+
+   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc,
+                        pmin, p_cut, eosvmax, length, regElemList);
+
+#pragma omp parallel for firstprivate(length, rho0, q_cut)
+   for (Index_t i = 0 ; i < length ; ++i){
+      Index_t ielem = regElemList[i];
+
+      if ( delvc[i] <= Real_t(0.) ) {
+         Real_t ssc = ( pbvc[i] * e_new[i]
+                 + vnewc[ielem] * vnewc[ielem] * bvc[i] * p_new[i] ) / rho0 ;
+
+         if ( ssc <= Real_t(.1111111e-36) ) {
+            ssc = Real_t(.3333333e-18) ;
+         } else {
+            ssc = SQRT(ssc) ;
+         }
+
+         q_new[i] = (ssc*ql_old[i] + qq_old[i]) ;
+
+         if (FABS(q_new[i]) < q_cut) q_new[i] = Real_t(0.) ;
+      }
+   }
+
+   Release(&pHalfStep) ;
 
    return ;
 }
@@ -2040,14 +2190,15 @@ void CalcSoundSpeedForElems(Domain &domain,
 #pragma omp parallel for firstprivate(rho0, ss4o3)
    for (Index_t i = 0; i < len ; ++i) {
       Index_t ielem = regElemList[i];
-      /*
+      Real_t ssTmp = (pbvc[i] * enewc[i] + vnewc[ielem] * vnewc[ielem] *
+                 bvc[i] * pnewc[i]) / rho0;
       if (ssTmp <= Real_t(.1111111e-36)) {
          ssTmp = Real_t(.3333333e-18);
       }
       else {
          ssTmp = SQRT(ssTmp);
-      }*/
-      domain.ss(ielem) = rho0 ;
+      }
+      domain.ss(ielem) = ssTmp ;
    }
 }
 
@@ -2086,42 +2237,101 @@ void EvalEOSForElems(Domain& domain, Real_t *vnewc,
    Real_t *bvc = Allocate<Real_t>(numElemReg) ;
    Real_t *pbvc = Allocate<Real_t>(numElemReg) ;
  
-   Real_t *pHalfStep = Allocate<Real_t>(numElemReg) ;
+   //loop to add load imbalance based on region number 
+   for(Int_t j = 0; j < rep; j++) {
+      /* compress data, minimal set */
+#if OMP_MERGE
+#pragma omp parallel
+#endif
+      {
+#if OMP_MERGE
+#pragma omp for nowait firstprivate(numElemReg)
+#else
+#pragma omp parallel for firstprivate(numElemReg)
+#endif
+         for (Index_t i=0; i<numElemReg; ++i) {
+            Index_t ielem = regElemList[i];
+            e_old[i] = domain.e(ielem) ;
+            delvc[i] = domain.delv(ielem) ;
+            p_old[i] = domain.p(ielem) ;
+            q_old[i] = domain.q(ielem) ;
+            qq_old[i] = domain.qq(ielem) ;
+            ql_old[i] = domain.ql(ielem) ;
+         }
 
-#pragma omp parallel for firstprivate(numElemReg, emin)
-   for (Index_t i = 0 ; i < numElemReg ; ++i) {
-      e_new[i] = e_old[i] - Real_t(0.5) * delvc[i] * (p_old[i] + q_old[i])
-         + Real_t(0.5) * work[i];
+#if OMP_MERGE
+#pragma omp for firstprivate(numElemReg)
+#else
+#pragma omp parallel for firstprivate(numElemReg)
+#endif
+         for (Index_t i = 0; i < numElemReg ; ++i) {
+            Index_t ielem = regElemList[i];
+            Real_t vchalf ;
+            compression[i] = Real_t(1.) / vnewc[ielem] - Real_t(1.);
+            vchalf = vnewc[ielem] - delvc[i] * Real_t(.5);
+            compHalfStep[i] = Real_t(1.) / vchalf - Real_t(1.);
+         }
 
-      if (e_new[i]  < emin ) {
-         e_new[i] = emin ;
+      /* Check for v > eosvmax or v < eosvmin */
+         if ( eosvmin != Real_t(0.) ) {
+#if OMP_MERGE
+#pragma omp for nowait firstprivate(numElemReg, eosvmin)
+#else
+#pragma omp parallel for firstprivate(numElemReg, eosvmin)
+#endif
+            for(Index_t i=0 ; i<numElemReg ; ++i) {
+               Index_t ielem = regElemList[i];
+               if (vnewc[ielem] <= eosvmin) { /* impossible due to calling func? */
+                  compHalfStep[i] = compression[i] ;
+               }
+            }
+         }
+         if ( eosvmax != Real_t(0.) ) {
+#if OMP_MERGE
+#pragma omp for nowait firstprivate(numElemReg, eosvmax)
+#else
+#pragma omp parallel for firstprivate(numElemReg, eosvmax)
+#endif
+            for(Index_t i=0 ; i<numElemReg ; ++i) {
+               Index_t ielem = regElemList[i];
+               if (vnewc[ielem] >= eosvmax) { /* impossible due to calling func? */
+                  p_old[i]        = Real_t(0.) ;
+                  compression[i]  = Real_t(0.) ;
+                  compHalfStep[i] = Real_t(0.) ;
+               }
+            }
+         }
+
+#if OMP_MERGE
+#pragma omp for nowait firstprivate(numElemReg)
+#else
+#pragma omp parallel for firstprivate(numElemReg)
+#endif
+         for (Index_t i = 0 ; i < numElemReg ; ++i) {
+            work[i] = Real_t(0.) ; 
+         }
       }
+      CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
+                         p_old, e_old,  q_old, compression, compHalfStep,
+                         vnewc, work,  delvc, pmin,
+                         p_cut, e_cut, q_cut, emin,
+                         qq_old, ql_old, rho0, eosvmax,
+                         numElemReg, regElemList);
    }
 
 #pragma omp parallel for firstprivate(numElemReg)
-   for (Index_t i = 0; i < numElemReg ; ++i) {
-      Real_t c1s = Real_t(2.0)/Real_t(3.0) ;
-      bvc[i] = c1s * (compression[i] + Real_t(1.));
-      pbvc[i] = c1s;
-   }
-
-#pragma omp parallel for firstprivate(numElemReg, pmin, p_cut, eosvmax)
-   for (Index_t i = 0 ; i < numElemReg ; ++i){
+   for (Index_t i=0; i<numElemReg; ++i) {
       Index_t ielem = regElemList[i];
-      
-      p_new[i] = bvc[i] * e_old[i] ;
-
-      if    (FABS(p_new[i]) <  p_cut   )
-         p_new[i] = Real_t(0.0) ;
-
-      if    ( vnewc[ielem] >= eosvmax ) /* impossible condition here? */
-         p_new[i] = Real_t(0.0) ;
-
-      if    (p_new[i]       <  pmin)
-         p_new[i]   = pmin ;
+      domain.p(ielem) = p_new[i] ;
+      domain.e(ielem) = e_new[i] ;
+      domain.q(ielem) = q_new[i] ;
    }
 
-   Release(&pHalfStep) ;
+   CalcSoundSpeedForElems(domain,
+                          vnewc, rho0, e_new, p_new,
+                          pbvc, bvc, ss4o3,
+                          numElemReg, regElemList) ;
+
    Release(&pbvc) ;
    Release(&bvc) ;
    Release(&q_new) ;
@@ -2150,16 +2360,27 @@ void ApplyMaterialPropertiesForElems(Domain& domain)
     Real_t eosvmin = domain.eosvmin() ;
     Real_t eosvmax = domain.eosvmax() ;
     Real_t *vnewc = Allocate<Real_t>(numElem) ;
-#if 0
+
+#if OMP_MERGE
+#pragma omp parallel
+#endif
     {
+#if OMP_MERGE
+#pragma omp for firstprivate(numElem)
+#else
 #pragma omp parallel for firstprivate(numElem)
+#endif
        for(Index_t i=0 ; i<numElem ; ++i) {
           vnewc[i] = domain.vnew(i) ;
        }
 
        // Bound the updated relative volumes with eosvmin/max
        if (eosvmin != Real_t(0.)) {
+#if OMP_MERGE
+#pragma omp for nowait firstprivate(numElem)
+#else
 #pragma omp parallel for firstprivate(numElem)
+#endif
           for(Index_t i=0 ; i<numElem ; ++i) {
              if (vnewc[i] < eosvmin)
                 vnewc[i] = eosvmin ;
@@ -2167,7 +2388,11 @@ void ApplyMaterialPropertiesForElems(Domain& domain)
        }
 
        if (eosvmax != Real_t(0.)) {
+#if OMP_MERGE
+#pragma omp for nowait firstprivate(numElem)
+#else
 #pragma omp parallel for firstprivate(numElem)
+#endif
           for(Index_t i=0 ; i<numElem ; ++i) {
              if (vnewc[i] > eosvmax)
                 vnewc[i] = eosvmax ;
@@ -2177,7 +2402,11 @@ void ApplyMaterialPropertiesForElems(Domain& domain)
        // This check may not make perfect sense in LULESH, but
        // it's representative of something in the full code -
        // just leave it in, please
+#if OMP_MERGE
+#pragma omp for nowait firstprivate(numElem)
+#else
 #pragma omp parallel for firstprivate(numElem)
+#endif
        for (Index_t i=0; i<numElem; ++i) {
           Real_t vc = domain.v(i) ;
           if (eosvmin != Real_t(0.)) {
@@ -2197,7 +2426,6 @@ void ApplyMaterialPropertiesForElems(Domain& domain)
           }
        }
     }
-#endif
 
     for (Int_t r=0 ; r<domain.numReg() ; r++) {
        Index_t numElemReg = domain.regElemSize(r);
@@ -2249,14 +2477,12 @@ void LagrangeElements(Domain& domain, Index_t numElem)
   CalcLagrangeElements(domain) ;
 
   /* Calculate Q.  (Monotonic q option requires communication) */
-  //CalcQForElems(domain) ;
+  CalcQForElems(domain) ;
 
   ApplyMaterialPropertiesForElems(domain) ;
-  /*
 
   UpdateVolumesForElems(domain, 
                         domain.v_cut(), numElem) ;
-  */
 }
 
 /******************************************/
@@ -2417,7 +2643,6 @@ void CalcTimeConstraintsForElems(Domain& domain) {
 static inline
 void LagrangeLeapFrog(Domain& domain)
 {
-   ApplyAccelerationBoundaryConditionsForNodes(domain);
 #ifdef SEDOV_SYNC_POS_VEL_LATE
    Domain_member fieldData[6] ;
 #endif
@@ -2426,13 +2651,13 @@ void LagrangeLeapFrog(Domain& domain)
     * applied boundary conditions and slide surface considerations */
    LagrangeNodal(domain);
 
+
 #ifdef SEDOV_SYNC_POS_VEL_LATE
 #endif
 
    /* calculate element quantities (i.e. velocity gradient & q), and update
     * material states */
    LagrangeElements(domain, domain.numElem());
-#if 0
 
 #if USE_MPI   
 #ifdef SEDOV_SYNC_POS_VEL_LATE
@@ -2460,7 +2685,6 @@ void LagrangeLeapFrog(Domain& domain)
    CommSyncPosVel(domain) ;
 #endif
 #endif   
-#endif
 }
 
 void __enzyme_autodiff(void*, void*, void*);
