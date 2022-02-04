@@ -6,8 +6,11 @@
 # ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13D/Enzyme/ClangEnzyme-13.so
 # CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildall/bin
 
-ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-14.so
-CLANG_PATH ?= /mnt/sabrent/wmoses/omp-llvm/build/bin
+#ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-14.so
+#CLANG_PATH ?= /mnt/sabrent/wmoses/omp-llvm/build/bin
+
+ENZYME_PATH ?= /home/ubuntu/Enzyme/enzyme/build/Enzyme/ClangEnzyme-14.so
+CLANG_PATH ?= /home/ubuntu/llvm-project/build/bin
 
 OPENMP_PATH ?= $(CLANG_PATH)/../projects/openmp/runtime/src
 MPI_PATH ?= /usr/lib/x86_64-linux-gnu/openmpi/include
