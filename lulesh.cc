@@ -2641,7 +2641,7 @@ void CalcTimeConstraintsForElems(Domain& domain) {
 /******************************************/
 
 static inline
-void LagrangeLeapFrog(Domain& domain)
+void LagrangeLeapFrog(Domain& __restrict__ domain)
 {
 #ifdef SEDOV_SYNC_POS_VEL_LATE
    Domain_member fieldData[6] ;
