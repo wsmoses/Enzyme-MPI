@@ -2060,8 +2060,9 @@ void CalcEnergyForElems(Real_t* p_new, Real_t* e_new, Real_t* q_new,
                         Real_t eosvmax,
                         Index_t length, Index_t *regElemList)
 {
-   Real_t *pHalfStep = Allocate<Real_t>(length) ;
+  // Real_t *pHalfStep = Allocate<Real_t>(length) ;
 
+#if 0
 #pragma omp parallel for firstprivate(length, emin)
    for (Index_t i = 0 ; i < length ; ++i) {
       e_new[i] = e_old[i] - Real_t(0.5) * delvc[i] * (p_old[i] + q_old[i])
@@ -2071,20 +2072,22 @@ void CalcEnergyForElems(Real_t* p_new, Real_t* e_new, Real_t* q_new,
          e_new[i] = emin ;
       }
    }
+#endif
+   //CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep, vnewc,
+   //                     pmin, p_cut, eosvmax, length, regElemList);
 
-   CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep, vnewc,
-                        pmin, p_cut, eosvmax, length, regElemList);
-
+#if 1
 #pragma omp parallel for firstprivate(length, rho0)
    for (Index_t i = 0 ; i < length ; ++i) {
       Real_t vhalf = Real_t(1.) / (Real_t(1.) + compHalfStep[i]) ;
 
+#if 1
       if ( delvc[i] > Real_t(0.) ) {
          q_new[i] /* = qq_old[i] = ql_old[i] */ = Real_t(0.) ;
       }
       else {
          Real_t ssc = ( pbvc[i] * e_new[i]
-                 + vhalf * vhalf * bvc[i] * pHalfStep[i] ) / rho0 ;
+                 + vhalf * vhalf * bvc[i] ) / rho0 ;
 
          if ( ssc <= Real_t(.1111111e-36) ) {
             ssc = Real_t(.3333333e-18) ;
@@ -2094,12 +2097,15 @@ void CalcEnergyForElems(Real_t* p_new, Real_t* e_new, Real_t* q_new,
 
          q_new[i] = (ssc*ql_old[i] + qq_old[i]) ;
       }
-
+#endif
+#if 1
       e_new[i] = e_new[i] + Real_t(0.5) * delvc[i]
          * (  Real_t(3.0)*(p_old[i]     + q_old[i])
-              - Real_t(4.0)*(pHalfStep[i] + q_new[i])) ;
+              - Real_t(4.0)*( q_new[i])) ;
+#endif
    }
-
+#endif
+#if 0
 #pragma omp parallel for firstprivate(length, emin, e_cut)
    for (Index_t i = 0 ; i < length ; ++i) {
 
@@ -2172,8 +2178,9 @@ void CalcEnergyForElems(Real_t* p_new, Real_t* e_new, Real_t* q_new,
          if (FABS(q_new[i]) < q_cut) q_new[i] = Real_t(0.) ;
       }
    }
+#endif
 
-   Release(&pHalfStep) ;
+   //Release(&pHalfStep) ;
 
    return ;
 }
@@ -2234,11 +2241,10 @@ void EvalEOSForElems(Domain& domain, Real_t *vnewc,
    Real_t *p_new = Allocate<Real_t>(numElemReg) ;
    Real_t *e_new = Allocate<Real_t>(numElemReg) ;
    Real_t *q_new = Allocate<Real_t>(numElemReg) ;
-   Real_t *bvc = Allocate<Real_t>(numElemReg) ;
-   Real_t *pbvc = Allocate<Real_t>(numElemReg) ;
  
    //loop to add load imbalance based on region number 
    for(Int_t j = 0; j < rep; j++) {
+#if 0
       /* compress data, minimal set */
 #if OMP_MERGE
 #pragma omp parallel
@@ -2311,14 +2317,34 @@ void EvalEOSForElems(Domain& domain, Real_t *vnewc,
             work[i] = Real_t(0.) ; 
          }
       }
-      CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
-                         p_old, e_old,  q_old, compression, compHalfStep,
-                         vnewc, work,  delvc, pmin,
-                         p_cut, e_cut, q_cut, emin,
-                         qq_old, ql_old, rho0, eosvmax,
-                         numElemReg, regElemList);
-   }
+#endif
+   for (Index_t i = 0 ; i < numElemReg ; ++i) {
+      Real_t vhalf = Real_t(1.) / (Real_t(1.) + compHalfStep[i]) ;
 
+#if 1
+      if ( delvc[i] > Real_t(0.) ) {
+         q_new[i] /* = qq_old[i] = ql_old[i] */ = Real_t(0.) ;
+      }
+      else {
+         Real_t ssc = e_new[i] / rho0 ;
+
+         if ( ssc <= Real_t(.1111111e-36) ) {
+            ssc = Real_t(.3333333e-18) ;
+         } else {
+            ssc = SQRT(ssc) ;
+         }
+
+         q_new[i] = (ssc*ql_old[i] + qq_old[i]) ;
+      }
+#endif
+#if 1
+      e_new[i] = e_new[i] + Real_t(0.5) * delvc[i]
+         * (  Real_t(3.0)*(p_old[i]     + q_old[i])
+              - Real_t(4.0)*( q_new[i])) ;
+#endif
+   }
+   }
+#if 0
 #pragma omp parallel for firstprivate(numElemReg)
    for (Index_t i=0; i<numElemReg; ++i) {
       Index_t ielem = regElemList[i];
@@ -2326,14 +2352,15 @@ void EvalEOSForElems(Domain& domain, Real_t *vnewc,
       domain.e(ielem) = e_new[i] ;
       domain.q(ielem) = q_new[i] ;
    }
+#endif
 
+#if 0
    CalcSoundSpeedForElems(domain,
                           vnewc, rho0, e_new, p_new,
                           pbvc, bvc, ss4o3,
                           numElemReg, regElemList) ;
+#endif
 
-   Release(&pbvc) ;
-   Release(&bvc) ;
    Release(&q_new) ;
    Release(&e_new) ;
    Release(&p_new) ;
@@ -2474,15 +2501,15 @@ void UpdateVolumesForElems(Domain &domain,
 static inline
 void LagrangeElements(Domain& domain, Index_t numElem)
 {
-  CalcLagrangeElements(domain) ;
+  //CalcLagrangeElements(domain) ;
 
   /* Calculate Q.  (Monotonic q option requires communication) */
-  CalcQForElems(domain) ;
+  //CalcQForElems(domain) ;
 
   ApplyMaterialPropertiesForElems(domain) ;
 
-  UpdateVolumesForElems(domain, 
-                        domain.v_cut(), numElem) ;
+  //UpdateVolumesForElems(domain, 
+  //                      domain.v_cut(), numElem) ;
 }
 
 /******************************************/
@@ -2649,7 +2676,7 @@ void LagrangeLeapFrog(Domain& domain)
 
    /* calculate nodal forces, accelerations, velocities, positions, with
     * applied boundary conditions and slide surface considerations */
-   LagrangeNodal(domain);
+   //LagrangeNodal(domain);
 
 
 #ifdef SEDOV_SYNC_POS_VEL_LATE
@@ -2678,7 +2705,7 @@ void LagrangeLeapFrog(Domain& domain)
 #endif
 #endif   
 
-   CalcTimeConstraintsForElems(domain);
+   //CalcTimeConstraintsForElems(domain);
 
 #if USE_MPI   
 #ifdef SEDOV_SYNC_POS_VEL_LATE

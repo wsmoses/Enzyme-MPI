@@ -6,11 +6,11 @@
 # ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13D/Enzyme/ClangEnzyme-13.so
 # CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildall/bin
 
-#ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-14.so
-#CLANG_PATH ?= /mnt/sabrent/wmoses/omp-llvm/build/bin
+ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-14.so
+CLANG_PATH ?= /mnt/sabrent/wmoses/omp-llvm/build/bin
 
-ENZYME_PATH ?= /home/ubuntu/Enzyme/enzyme/build/Enzyme/ClangEnzyme-14.so
-CLANG_PATH ?= /home/ubuntu/llvm-project/build/bin
+#ENZYME_PATH ?= /home/ubuntu/Enzyme/enzyme/build/Enzyme/ClangEnzyme-14.so
+#CLANG_PATH ?= /home/ubuntu/llvm-project/build/bin
 
 OPENMP_PATH ?= $(CLANG_PATH)/../projects/openmp/runtime/src
 MPI_PATH ?= /usr/lib/x86_64-linux-gnu/openmpi/include
@@ -32,7 +32,8 @@ SOURCES2.0 = \
 OBJECTS2.0 = $(SOURCES2.0:.cc=.o)
 
 #Default build suggestions with OpenMP for g++
-CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -flegacy-pass-manager -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH) -lmpi
+CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -flegacy-pass-manager -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH) -lmpi -mllvm -attributor-max-iterations=128 -mllvm -capture-tracking-max-uses-to-explore=256 -ffast-math -mllvm -enzyme-print
+CXXFLAGS += -mllvm -debug-only=openmp-opt -mllvm -openmp-opt-print-module
 # -mllvm -enzyme-attributor=0
 # -mllvm -enzyme-print -mllvm -enzyme-print-type
 
