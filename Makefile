@@ -32,15 +32,19 @@ SOURCES2.0 = \
 OBJECTS2.0 = $(SOURCES2.0:.cc=.o)
 
 #Default build suggestions with OpenMP for g++
-CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -flegacy-pass-manager -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH) -lmpi -mllvm -attributor-max-iterations=128 -mllvm -capture-tracking-max-uses-to-explore=256 -ffast-math -mllvm -enzyme-print
+CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -flegacy-pass-manager -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH) -lmpi -mllvm -attributor-max-iterations=128 -mllvm -capture-tracking-max-uses-to-explore=256 -ffast-math -mllvm -enzyme-print -Rpass=enzyme
+# enzyme-print-perf
 CXXFLAGS += -mllvm -debug-only=openmp-opt -mllvm -openmp-opt-print-module
 # -mllvm -enzyme-attributor=0
 # -mllvm -enzyme-print -mllvm -enzyme-print-type
 
 
-all: ser-single-forward.exe omp-single-forward.exe ompM-single-forward.exe ser-mpi-forward.exe omp-mpi-forward.exe ompM-mpi-forward.exe ser-single-gradient.exe omp-single-gradient.exe ompM-single-gradient.exe ser-mpi-gradient.exe omp-mpi-gradient.exe ompM-mpi-gradient.exe ompOpt-single-forward.exe ompOpt-mpi-forward.exe ompOpt-single-gradient.exe ompOpt-mpi-gradient.exe
+all: ser-single-forward.exe omp-single-forward.exe ompM-single-forward.exe ser-mpi-forward.exe omp-mpi-forward.exe ompM-mpi-forward.exe ser-single-gradient.exe omp-single-gradient.exe ompM-single-gradient.exe ser-mpi-gradient.exe omp-mpi-gradient.exe ompM-mpi-gradient.exe ompOpt-single-forward.exe ompOpt-mpi-forward.exe ompOpt-single-gradient.exe ompOpt-mpi-gradient.exe ser-single-gradientnomat.exe
 
 # all: omp-single-forward.exe omp-single-gradient.exe
+
+simple.ll: simple.cpp
+	time $(CXX) simple.cpp $(CXXFLAGS) -S -emit-llvm -o $@ 
 
 ser-single-forward.exe: $(SOURCES2.0)
 	time $(CXX) -DOMP_MERGE=0 -DUSE_MPI=0 $(SOURCES2.0) $(CXXFLAGS) -lm -o $@ -DFORWARD=1
@@ -68,6 +72,9 @@ ompOpt-mpi-forward.exe: $(SOURCES2.0)
 
 ser-single-gradient.exe: $(SOURCES2.0)
 	time $(CXX) -DOMP_MERGE=0 -DUSE_MPI=0 $(SOURCES2.0) $(CXXFLAGS) -lm -o $@
+
+ser-single-gradientnomat.exe: $(SOURCES2.0)
+	time $(CXX) -DOMP_MERGE=0 -DUSE_MPI=0 $(SOURCES2.0) $(CXXFLAGS) -lm -o $@ -mllvm -enzyme-rematerialize=0
 
 omp-single-gradient.exe: $(SOURCES2.0)
 	time $(CXX) -DOMP_MERGE=0 -DUSE_MPI=0 -fopenmp $(SOURCES2.0) $(CXXFLAGS) -lm -o $@ $(OPENMP_LIB) -mllvm -enzyme-omp-opt=0
