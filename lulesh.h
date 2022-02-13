@@ -117,7 +117,8 @@ T *Allocate(size_t size)
 template <typename T>
 void Release(T **ptr)
 {
-   if (*ptr != NULL) {
+   //if (*ptr != NULL)
+   {
       free(*ptr) ;
       *ptr = NULL ;
    }

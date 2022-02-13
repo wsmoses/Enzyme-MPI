@@ -1361,7 +1361,7 @@ Real_t CalcElemVolume( const Real_t x0, const Real_t x1,
 
 /******************************************/
 
-//inline
+__attribute__((always_inline))
 Real_t CalcElemVolume( const Real_t x[8], const Real_t y[8], const Real_t z[8] )
 {
 return CalcElemVolume( x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7],
@@ -1505,7 +1505,7 @@ void CalcElemVelocityGradient( const Real_t* const xvel,
 
 /******************************************/
 
-//static inline
+static inline
 void CalcKinematicsForElems( Domain &domain,
                              Real_t deltaTime, Index_t numElem )
 {
@@ -2644,7 +2644,7 @@ void CalcTimeConstraintsForElems(Domain& domain) {
 /******************************************/
 
 static inline
-void LagrangeLeapFrog(Domain& domain)
+void LagrangeLeapFrog(Domain& __restrict__ domain)
 {
 #ifdef SEDOV_SYNC_POS_VEL_LATE
    Domain_member fieldData[6] ;
