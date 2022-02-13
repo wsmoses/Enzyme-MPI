@@ -22,6 +22,8 @@ _Noreturn int MPI_Abort(MPI_Comm, int errorcode);
 #include <stdint.h>
 #include <vector>
 
+#define exit(X) printf("bad %d\n", X);
+
 //**************************************************
 // Allow flexibility for arithmetic representations 
 //**************************************************
