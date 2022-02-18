@@ -22,6 +22,8 @@ _Noreturn int MPI_Abort(MPI_Comm, int errorcode);
 #include <stdint.h>
 #include <vector>
 
+//#define exit(X) printf("bad %d\n", X);
+
 //**************************************************
 // Allow flexibility for arithmetic representations 
 //**************************************************
@@ -117,7 +119,8 @@ T *Allocate(size_t size)
 template <typename T>
 void Release(T **ptr)
 {
-   if (*ptr != NULL) {
+   //if (*ptr != NULL)
+   {
       free(*ptr) ;
       *ptr = NULL ;
    }
