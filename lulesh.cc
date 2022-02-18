@@ -287,6 +287,7 @@ void InitStressTermsForElems(Domain &domain,
 
 /******************************************/
 
+__attribute__((always_inline))
 static inline
 void CalcElemShapeFunctionDerivatives( Real_t const x[],
                                        Real_t const y[],
@@ -1360,7 +1361,7 @@ Real_t CalcElemVolume( const Real_t x0, const Real_t x1,
 
 /******************************************/
 
-//inline
+__attribute__((always_inline))
 Real_t CalcElemVolume( const Real_t x[8], const Real_t y[8], const Real_t z[8] )
 {
 return CalcElemVolume( x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7],
@@ -1504,7 +1505,7 @@ void CalcElemVelocityGradient( const Real_t* const xvel,
 
 /******************************************/
 
-//static inline
+static inline
 void CalcKinematicsForElems( Domain &domain,
                              Real_t deltaTime, Index_t numElem )
 {
@@ -1573,7 +1574,7 @@ void CalcKinematicsForElems( Domain &domain,
 /******************************************/
 
 static inline
-void CalcLagrangeElements(Domain& domain)
+void CalcLagrangeElements(Domain& __restrict__ domain)
 {
    Index_t numElem = domain.numElem() ;
    if (numElem > 0) {
@@ -1946,7 +1947,7 @@ void CalcMonotonicQForElems(Domain& domain)
 /******************************************/
 
 static inline
-void CalcQForElems(Domain& domain)
+void CalcQForElems(Domain& __restrict__ domain)
 {
    //
    // MONOTONIC Q option
@@ -2238,7 +2239,9 @@ void EvalEOSForElems(Domain& domain, Real_t *vnewc,
    Real_t *pbvc = Allocate<Real_t>(numElemReg) ;
  
    //loop to add load imbalance based on region number 
-   for(Int_t j = 0; j < rep; j++) {
+   // TODO ascertain loop scope
+   for(Int_t j = 0; j < rep; j++) 
+   {
       /* compress data, minimal set */
 #if OMP_MERGE
 #pragma omp parallel
@@ -2687,7 +2690,8 @@ void LagrangeLeapFrog(Domain& __restrict__ domain)
 #endif   
 }
 
-void __enzyme_autodiff(void*, void*, void*);
+int enzyme_dup;
+void __enzyme_autodiff(void*, int, void*, void*);
 /******************************************/
 
 int main(int argc, char *argv[])
@@ -2794,7 +2798,7 @@ int main(int argc, char *argv[])
 #ifdef FORWARD
       LagrangeLeapFrog(*locDom) ;
 #else
-      __enzyme_autodiff((void*)LagrangeLeapFrog, locDom, grad_locDom);
+      __enzyme_autodiff((void*)LagrangeLeapFrog, enzyme_dup, locDom, grad_locDom);
 #endif
 
       if ((opts.showProg != 0) && (opts.quiet == 0) && (myRank == 0)) {
