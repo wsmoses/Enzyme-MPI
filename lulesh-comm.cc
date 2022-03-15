@@ -57,6 +57,7 @@
 
 
 /* doRecv flag only works with regular block structure */
+static inline
 void CommRecv(Domain& domain, Int_t msgType, Index_t xferFields,
               Index_t dx, Index_t dy, Index_t dz, bool doRecv, bool planeOnly) {
 
@@ -355,6 +356,7 @@ void CommRecv(Domain& domain, Int_t msgType, Index_t xferFields,
 
 /******************************************/
 template<Domain_member ...fields>
+static inline
 void CommSend(Domain& domain, Int_t msgType,
               Index_t dx, Index_t dy, Index_t dz, bool doSend, bool planeOnly)
 {
@@ -876,6 +878,7 @@ void CommSend(Domain& domain, Int_t msgType,
 /******************************************/
 
 template<Domain_member ...fields>
+static inline
 void CommSBN(Domain& domain) {
 
    Index_t xferFields = sizeof...(fields);
@@ -1320,7 +1323,7 @@ void CommSBN(Domain& domain) {
 }
 
 /******************************************/
-
+static inline
 void CommSyncPosVel(Domain& domain) {
 
    if (domain.numRanks() == 1)
@@ -1769,7 +1772,7 @@ void CommSyncPosVel(Domain& domain) {
 }
 
 /******************************************/
-
+static inline
 void CommMonoQ(Domain& domain)
 {
    if (domain.numRanks() == 1)

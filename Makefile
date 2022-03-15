@@ -32,7 +32,7 @@ SOURCES2.0 = \
 OBJECTS2.0 = $(SOURCES2.0:.cc=.o)
 
 #Default build suggestions with OpenMP for g++
-CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -flegacy-pass-manager -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH) -lmpi -mllvm -attributor-max-iterations=128 -mllvm -capture-tracking-max-uses-to-explore=256 -ffast-math -mllvm -memdep-block-scan-limit=70000 -mllvm -dse-memoryssa-walklimit=1000 
+CXXFLAGS = -O3 -I. -Wall -I $(OPENMP_PATH) -I $(MPI_PATH) -fno-exceptions -flegacy-pass-manager -mllvm -enzyme-loose-types -Xclang -load -Xclang $(ENZYME_PATH) -lmpi -mllvm -attributor-max-iterations=128 -mllvm -capture-tracking-max-uses-to-explore=256 -ffast-math -mllvm -memdep-block-scan-limit=70000 -mllvm -dse-memoryssa-walklimit=70000 -mllvm -enzyme-print -Rpass=enzyme -mllvm -enzyme-inline 
 # enzyme-print-perf
 # CXXFLAGS += -mllvm -debug-only=openmp-opt -mllvm -openmp-opt-print-module
 # -mllvm -enzyme-attributor=0
