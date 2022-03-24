@@ -154,6 +154,7 @@ Additional BSD Notice
 #include <sys/time.h>
 #include <iostream>
 #include <unistd.h>
+#include <numeric>
 
 #if _OPENMP
 # include <omp.h>
@@ -2643,6 +2644,7 @@ void CalcTimeConstraintsForElems(Domain& domain) {
 
 /******************************************/
 
+
 static inline
 void LagrangeLeapFrog(Domain& __restrict__ domain)
 {
@@ -2690,9 +2692,96 @@ void LagrangeLeapFrog(Domain& __restrict__ domain)
 #endif   
 }
 
+#ifdef VERIFY
+void LagrangeLeapFrogTwoSteps(Domain& __restrict__ domain) {
+   // We only get meaningful gradients for verification if we do
+   // at least two time steps of LagrangeLeapFrog
+   TimeIncrement(domain) ;
+   LagrangeLeapFrog(domain);
+   TimeIncrement(domain) ;
+   LagrangeLeapFrog(domain);
+}
+#endif
+
 int enzyme_dup;
 void __enzyme_autodiff(void*, int, void*, void*);
 /******************************************/
+
+#ifdef VERIFY
+void reset(Domain* dom) {
+   // Set all real-valued members of a domain object to zero.
+   // This is used to zero-out the shadow domain, to ensure
+   // none of these variables is mistakenly taken as a non-
+   // zero seed during gradient propagation.
+   std::fill(dom->m_x.begin(), dom->m_x.end(), 0.0);
+   std::fill(dom->m_y.begin(), dom->m_y.end(), 0.0);
+   std::fill(dom->m_z.begin(), dom->m_z.end(), 0.0);
+
+   std::fill(dom->m_xd.begin(), dom->m_xd.end(), 0.0);
+   std::fill(dom->m_yd.begin(), dom->m_yd.end(), 0.0);
+   std::fill(dom->m_zd.begin(), dom->m_zd.end(), 0.0);
+
+   std::fill(dom->m_xdd.begin(), dom->m_xdd.end(), 0.0);
+   std::fill(dom->m_ydd.begin(), dom->m_ydd.end(), 0.0);
+   std::fill(dom->m_zdd.begin(), dom->m_zdd.end(), 0.0);
+
+   std::fill(dom->m_fx.begin(), dom->m_fx.end(), 0.0);
+   std::fill(dom->m_fy.begin(), dom->m_fy.end(), 0.0);
+   std::fill(dom->m_fz.begin(), dom->m_fz.end(), 0.0);
+
+   std::fill(dom->m_nodalMass.begin(), dom->m_nodalMass.end(), 0.0);
+
+   std::fill(dom->m_e.begin(), dom->m_e.end(), 0.0);
+
+   std::fill(dom->m_p.begin(), dom->m_p.end(), 0.0);
+   std::fill(dom->m_q.begin(), dom->m_q.end(), 0.0);
+   std::fill(dom->m_ql.begin(), dom->m_ql.end(), 0.0);
+   std::fill(dom->m_qq.begin(), dom->m_qq.end(), 0.0);
+
+   std::fill(dom->m_v.begin(), dom->m_v.end(), 0.0);
+   std::fill(dom->m_volo.begin(), dom->m_volo.end(), 0.0);
+   std::fill(dom->m_vnew.begin(), dom->m_vnew.end(), 0.0);
+   std::fill(dom->m_delv.begin(), dom->m_delv.end(), 0.0);
+   std::fill(dom->m_vdov.begin(), dom->m_vdov.end(), 0.0);
+
+   std::fill(dom->m_arealg.begin(), dom->m_arealg.end(), 0.0);
+   
+   std::fill(dom->m_ss.begin(), dom->m_ss.end(), 0.0);
+
+   std::fill(dom->m_elemMass.begin(), dom->m_elemMass.end(), 0.0);
+
+   dom->m_e_cut = 0.0;
+   dom->m_p_cut = 0.0;
+   dom->m_q_cut = 0.0;
+   dom->m_v_cut = 0.0;
+   dom->m_u_cut = 0.0;
+
+   dom->m_hgcoef = 0.0;
+   dom->m_ss4o3  = 0.0;
+   dom->m_qstop  = 0.0;
+   dom->m_monoq_max_slope  = 0.0;
+   dom->m_monoq_limiter_mult  = 0.0;
+   dom->m_qlc_monoq  = 0.0;
+   dom->m_qqc_monoq  = 0.0;
+   dom->m_qqc  = 0.0;
+   dom->m_eosvmax  = 0.0;
+   dom->m_eosvmin  = 0.0;
+   dom->m_pmin  = 0.0;
+   dom->m_emin  = 0.0;
+   dom->m_dvovmax  = 0.0;
+   dom->m_refdens  = 0.0;
+
+   dom->m_dtcourant  = 0.0;
+   dom->m_dthydro  = 0.0;
+   dom->m_dtfixed  = 0.0;
+   dom->m_time  = 0.0;
+   dom->m_deltatime  = 0.0;
+   dom->m_deltatimemultlb  = 0.0;
+   dom->m_deltatimemultub  = 0.0;
+   dom->m_dtmax  = 0.0;
+   dom->m_stoptime  = 0.0;
+}
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -2792,13 +2881,36 @@ int main(int argc, char *argv[])
 //debug to see region sizes
 //   for(Int_t i = 0; i < locDom->numReg(); i++)
 //      std::cout << "region" << i + 1<< "size" << locDom->regElemSize(i) <<std::endl;
+#ifdef VERIFY
+#ifdef FORWARD
+   // SEED FINITE DIFFERENCES
+   double eps = 1e-6;
+   grad_locDom->m_e[0] += eps;
+   locDom->m_e[0] -= eps;
+#else
+   // SEED GRADIENTS
+   reset(grad_locDom);
+   for(int i=0; i<grad_locDom->m_e.size(); i++) {
+     grad_locDom->m_e[i] = 1.0;
+   }
+#endif
+#endif
    while((locDom->time() < locDom->stoptime()) && (locDom->cycle() < opts.its)) {
 
-      TimeIncrement(*locDom) ;
 #ifdef FORWARD
+#ifdef VERIFY
+      LagrangeLeapFrogTwoSteps(*locDom) ;
+      LagrangeLeapFrogTwoSteps(*grad_locDom) ;
+#else
+      TimeIncrement(*locDom) ;
       LagrangeLeapFrog(*locDom) ;
+#endif
+#else
+#ifdef VERIFY
+      __enzyme_autodiff((void*)LagrangeLeapFrogTwoSteps, enzyme_dup, locDom, grad_locDom);
 #else
       __enzyme_autodiff((void*)LagrangeLeapFrog, enzyme_dup, locDom, grad_locDom);
+#endif
 #endif
 
       if ((opts.showProg != 0) && (opts.quiet == 0) && (myRank == 0)) {
@@ -2809,6 +2921,21 @@ int main(int argc, char *argv[])
          std::cout.unsetf(std::ios_base::floatfield);
       }
    }
+#ifdef VERIFY
+#ifdef FORWARD
+   // HARVEST AND CHECK FINITE DIFFERENCES
+   double checksum = 0;
+   for(int i=0; i<grad_locDom->m_e.size(); i++) {
+     checksum += (grad_locDom->m_e[i]        - locDom->m_e[i]       ) / (2.0*eps) ;
+   }
+   printf("FD       checksum: %f\n",checksum);
+#else
+   // HARVEST AND CHECK GRADIENTS
+   double checksum = 0;
+   checksum += grad_locDom->m_e[0];
+   printf("gradient checksum: %f\n",checksum);
+#endif
+#endif
 
    // Use reduced max elapsed time
    double elapsed_time;

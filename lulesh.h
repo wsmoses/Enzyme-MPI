@@ -536,28 +536,28 @@ class Domain {
    std::vector<Real_t> m_elemMass ;  /* mass */
 
    // Cutoffs (treat as constants)
-   const Real_t  m_e_cut ;             // energy tolerance 
-   const Real_t  m_p_cut ;             // pressure tolerance 
-   const Real_t  m_q_cut ;             // q tolerance 
-   const Real_t  m_v_cut ;             // relative volume tolerance 
-   const Real_t  m_u_cut ;             // velocity tolerance 
+   Real_t  m_e_cut ;             // energy tolerance 
+   Real_t  m_p_cut ;             // pressure tolerance 
+   Real_t  m_q_cut ;             // q tolerance 
+   Real_t  m_v_cut ;             // relative volume tolerance 
+   Real_t  m_u_cut ;             // velocity tolerance 
 
    // Other constants (usually setable, but hardcoded in this proxy app)
 
-   const Real_t  m_hgcoef ;            // hourglass control 
-   const Real_t  m_ss4o3 ;
-   const Real_t  m_qstop ;             // excessive q indicator 
-   const Real_t  m_monoq_max_slope ;
-   const Real_t  m_monoq_limiter_mult ;
-   const Real_t  m_qlc_monoq ;         // linear term coef for q 
-   const Real_t  m_qqc_monoq ;         // quadratic term coef for q 
-   const Real_t  m_qqc ;
-   const Real_t  m_eosvmax ;
-   const Real_t  m_eosvmin ;
-   const Real_t  m_pmin ;              // pressure floor 
-   const Real_t  m_emin ;              // energy floor 
-   const Real_t  m_dvovmax ;           // maximum allowable volume change 
-   const Real_t  m_refdens ;           // reference density 
+   Real_t  m_hgcoef ;            // hourglass control 
+   Real_t  m_ss4o3 ;
+   Real_t  m_qstop ;             // excessive q indicator 
+   Real_t  m_monoq_max_slope ;
+   Real_t  m_monoq_limiter_mult ;
+   Real_t  m_qlc_monoq ;         // linear term coef for q 
+   Real_t  m_qqc_monoq ;         // quadratic term coef for q 
+   Real_t  m_qqc ;
+   Real_t  m_eosvmax ;
+   Real_t  m_eosvmin ;
+   Real_t  m_pmin ;              // pressure floor 
+   Real_t  m_emin ;              // energy floor 
+   Real_t  m_dvovmax ;           // maximum allowable volume change 
+   Real_t  m_refdens ;           // reference density 
 
    // Variables to keep track of timestep, simulation time, and cycle
    Real_t  m_dtcourant ;         // courant constraint 
