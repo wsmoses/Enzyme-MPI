@@ -2696,9 +2696,7 @@ void LagrangeLeapFrog(Domain& __restrict__ domain)
 void LagrangeLeapFrogTwoSteps(Domain& __restrict__ domain) {
    // We only get meaningful gradients for verification if we do
    // at least two time steps of LagrangeLeapFrog
-   TimeIncrement(domain) ;
    LagrangeLeapFrog(domain);
-   TimeIncrement(domain) ;
    LagrangeLeapFrog(domain);
 }
 #endif
@@ -2897,12 +2895,13 @@ int main(int argc, char *argv[])
 #endif
    while((locDom->time() < locDom->stoptime()) && (locDom->cycle() < opts.its)) {
 
+      TimeIncrement(*locDom) ;
 #ifdef FORWARD
 #ifdef VERIFY
       LagrangeLeapFrogTwoSteps(*locDom) ;
+      TimeIncrement(*grad_locDom) ;
       LagrangeLeapFrogTwoSteps(*grad_locDom) ;
 #else
-      TimeIncrement(*locDom) ;
       LagrangeLeapFrog(*locDom) ;
 #endif
 #else
