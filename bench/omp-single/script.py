@@ -1,10 +1,12 @@
 #!/usr/bin/python3.8
 import os
+import pathlib
+scriptdir = pathlib.Path(__file__).parent.resolve()
 
 def printfun(numthreads, blocklist,itercount):
   for s in blocklist:
       for mode in ["forward","gradient"]:
-        os.system("OMP_NUM_THREADS={}  taskset -c 0-{} numactl -i all ~/enzyme-sc22/LULESH-CPP/omp-single-{}.exe -s {} -i {} > omp-single_{}_{}_{}_{}.txt".format(numthreads, numthreads-1, mode, s, itercount, mode,numthreads, itercount, s))
+        os.system("OMP_NUM_THREADS={}  taskset -c 0-{} numactl -i all ".format(numthreads, numthreads-1)+ str(scriptdir) + "/../../omp-single-{}.exe -s {} -i {} > " .format(mode,s,itercount) + str(scriptdir) + "/omp-single_{}_{}_{}_{}.txt".format(mode,numthreads, itercount, s))
 
 itercount=100
 #Strong scaling
