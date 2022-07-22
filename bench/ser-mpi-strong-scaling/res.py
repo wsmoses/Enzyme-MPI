@@ -9,7 +9,7 @@ def printfun(rank, blocklist,itercount,mode):
      os.system("sed -i \"s/ (s)//g\" results.txt")
 
 os.system("rm results.txt")
-itercount=20
+itercount=10
 for mode in ["_forward","_gradient"]:
   printfun(1, [192], itercount, mode)
   printfun(8, [96], itercount, mode)

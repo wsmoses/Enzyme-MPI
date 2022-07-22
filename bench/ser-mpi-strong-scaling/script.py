@@ -9,7 +9,7 @@ def printfun(rank, blocklist,itercount):
       for mode in ["forward","gradient"]:
         os.system("mpirun -n {} taskset -c 0-{} numactl -i all ".format(rank,rank-1)+ str(scriptdir) + "/../../ser-mpi-{}.exe -s {} -i {} > ".format(mode,s,itercount) + str(scriptdir) + "/ser-mpi_{}_{}_{}_{}.txt".format(mode,rank,itercount,s))
 
-itercount=20
+itercount=10
 printfun(1, [192], itercount)
 printfun(8, [96], itercount)
 printfun(27, [64], itercount)

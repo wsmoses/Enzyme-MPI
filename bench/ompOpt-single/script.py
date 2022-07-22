@@ -8,7 +8,7 @@ def printfun(numthreads, blocklist,itercount):
       for mode in ["forward","gradient"]:
         os.system("OMP_NUM_THREADS={}  taskset -c 0-{} numactl -i all ".format(numthreads, numthreads-1)+ str(scriptdir) + "/../../ompOpt-single-{}.exe -s {} -i {} > " .format(mode,s,itercount) + str(scriptdir) + "/omp-single_{}_{}_{}_{}.txt".format(mode,numthreads, itercount, s))
 
-itercount=10
+itercount=100
 #Strong scaling
 for numthreads in [1,8,16,24,32,40,48,56,64]:
   printfun(numthreads, [96], itercount)

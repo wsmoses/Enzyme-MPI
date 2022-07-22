@@ -11,7 +11,7 @@ def printfun(rank, blocklist,itercount,mode):
 os.system("rm results.txt")
 itercount=100
 for mode in ["_forward","_gradient"]:
-  printfun(1, [96],itercount,mode)
-  printfun(8, [96],itercount,mode)
-  printfun(27, [96],itercount,mode)
-  printfun(64, [96],itercount,mode)
+  printfun(1, [48],itercount,mode)
+  printfun(8, [48],itercount,mode)
+  printfun(27, [48],itercount,mode)
+  printfun(64, [48],itercount,mode)
