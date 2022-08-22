@@ -8,7 +8,7 @@ def printfun(numthreads, blocklist,itercount,mode):
      os.system("sed -i \"s/Elapsed time         =   //g\" results.txt")
      os.system("sed -i \"s/ (s)//g\" results.txt")
 
-os.system("rm results.txt")
+os.system("rm -f results.txt")
 itercount=100
 #Strong scaling
 for mode in ["_forward","_gradient"]:

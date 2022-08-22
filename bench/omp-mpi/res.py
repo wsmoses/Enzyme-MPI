@@ -1,4 +1,4 @@
-#!/usr/bin/python3.8
+#!/usr/bin/python3
 import os
 
 def printfun(rank, numthreads, blocklist,itercount,mode):

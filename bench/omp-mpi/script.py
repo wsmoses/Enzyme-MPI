@@ -1,4 +1,4 @@
-#!/usr/bin/python3.8
+#!/usr/bin/python3
 import os
 import pathlib
 scriptdir = pathlib.Path(__file__).parent.resolve()
